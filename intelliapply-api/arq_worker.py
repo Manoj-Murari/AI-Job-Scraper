@@ -1,9 +1,9 @@
 # arq_worker.py
 import logging
-import os  # <-- NEW IMPORT
+import os
 from datetime import datetime
 from typing import Optional
-from arq.connections import RedisSettings  # <-- NEW IMPORT
+from arq.connections import RedisSettings
 from config import is_ready, supabase
 from core.ai_analysis import get_gemini_analysis
 from core.database import batch_save_jobs
@@ -106,5 +106,6 @@ class WorkerSettings:
     ] 
     on_startup = startup
     on_shutdown = shutdown
-    # Use the environment variable from Render/Upstash
-    redis_settings = RedisSettings.from_url(os.getenv('REDIS_URL', 'redis://127.0.0.1:6379'))
+    # --- THIS IS THE FIX ---
+    redis_settings = RedisSettings.from_dsn(os.getenv('REDIS_URL', 'redis://127.0.0.1:6379'))
+    # --- END OF FIX ---

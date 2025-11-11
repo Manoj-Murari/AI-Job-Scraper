@@ -37,7 +37,9 @@ async def lifespan(app: FastAPI):
     redis_url = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379')
     log.info(f"Connecting to Redis at {redis_url}...")
     try:
-        ARQ_REDIS = await create_pool(RedisSettings.from_url(redis_url))
+        # --- THIS IS THE FIX ---
+        ARQ_REDIS = await create_pool(RedisSettings.from_dsn(redis_url))
+        # --- END OF FIX ---
         log.info("Successfully connected to Redis.")
     except Exception as e:
         log.error(f"Failed to connect to Redis: {e}")
