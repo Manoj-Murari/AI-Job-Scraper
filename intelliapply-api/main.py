@@ -5,7 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, status
 from arq import create_pool
-from arq.worker import Worker  # This import is correct
+from arq.worker import Worker
 from arq.connections import RedisSettings
 from pydantic import BaseModel, HttpUrl
 from typing import List, Optional
@@ -21,7 +21,7 @@ from core.ai_analysis import (
 )
 from core.auth import get_current_user
 from core.ai_crew import run_resume_crew
-from arq_worker import WorkerSettings # <-- This import is correct
+from arq_worker import WorkerSettings
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -42,24 +42,21 @@ async def lifespan(app: FastAPI):
         log.info("Successfully connected to Redis.")
     except Exception as e:
         log.error(f"Failed to connect to Redis: {e}")
-        raise e  # Fail fast if Redis connection fails
+        raise e
         
     # 2. Create the Worker instance
-    # --- THIS IS THE FIX ---
-    # We manually pass the settings from the class, not the class itself.
     worker = Worker(
         functions=WorkerSettings.functions, 
         redis_pool=ARQ_REDIS,
         on_startup=WorkerSettings.on_startup,
         on_shutdown=WorkerSettings.on_shutdown
     )
-    # --- END OF FIX ---
 
     # 3. Start the worker in the background using worker.main()
     log.info("Starting background Arq worker...")
     worker_task = asyncio.create_task(worker.main())
     
-    yield  # The application runs here
+    yield
     
     # 4. Cleanup on shutdown
     log.info("Shutting down worker...")
@@ -82,11 +79,14 @@ app = FastAPI(
 
 # --- CORS MIDDLEWARE ---
 from fastapi.middleware.cors import CORSMiddleware
+# --- THIS IS THE FINAL CHANGE ---
 origins = [
     "http://localhost:5173",
     "http://localhost:5174",
-    # "https://your-vercel-app-name.vercel.app" # <-- ADD LATER
+    "https://ai-job-scraper-zeta.vercel.app" # <-- ADD YOUR LIVE VERCEL URL HERE
 ]
+# --- END OF CHANGE ---
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -414,7 +414,7 @@ async def delete_jobs(request: JobDeleteRequest, user_id: str = Depends(get_curr
         log.error(f"Failed to delete jobs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/v1/jobs/delete-all-untracked")
+@app.post("/api/vD/jobs/delete-all-untracked")
 async def delete_all_untracked_jobs(user_id: str = Depends(get_current_user)):
     try:
         response = supabase.table("jobs") \
