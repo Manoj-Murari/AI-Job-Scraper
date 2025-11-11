@@ -2,7 +2,8 @@
 import { create } from 'zustand';
 import { supabase } from './supabaseClient';
 
-const API_BASE_URL = 'http://localhost:8000';
+// --- THIS IS THE CHANGE ---
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 // --- Auth Helper (NOW ASYNC) ---
 const getAuthHeaders = async () => {
@@ -56,7 +57,7 @@ export const useStore = create((set, get) => ({
   isInterviewPrepModalOpen: false,
   isApplicationHelperOpen: false,
   isAddJobModalOpen: false,
-  isOptimizedResumeModalOpen: false, // <-- NEW
+  isOptimizedResumeModalOpen: false,
 
   // --- AI Generation State ---
   isGenerating: false,
@@ -64,7 +65,7 @@ export const useStore = create((set, get) => ({
   coverLetter: '',
   interviewPrepData: null,
   aiError: null,
-  optimizedResume: '', // <-- NEW
+  optimizedResume: '',
 
   channel: null,
   isWelcomeModalOpen: false,
@@ -94,11 +95,9 @@ export const useStore = create((set, get) => ({
   closeSearchModal: () => set({ isSearchModalOpen: false }),
   openAddJobModal: () => set({ isAddJobModalOpen: true }),
   closeAddJobModal: () => set({ isAddJobModalOpen: false }),
-  // --- NEW MODAL ACTIONS ---
   openOptimizedResumeModal: () =>
     set({ isOptimizedResumeModalOpen: true, optimizedResume: '', aiError: null }),
   closeOptimizedResumeModal: () => set({ isOptimizedResumeModalOpen: false }),
-  // --- END NEW ---
 
   // Notifications & Confirmation
   addNotification: (message, type = 'success') => {
@@ -416,8 +415,14 @@ export const useStore = create((set, get) => ({
   },
 
   generateInterviewPrep: async (job, profile, jobDescription) => {
-    if (!job || !jobDescription) { /* ... (no change) ... */ }
-    if (!profile) { /* ... (no change) ... */ }
+    if (!job || !jobDescription) {
+      get().addNotification('Job description is missing.', 'error');
+      return;
+    }
+    if (!profile) {
+      get().addNotification('No profile selected.', 'error');
+      return;
+    }
     
     set({ isGenerating: true, interviewPrepData: null, aiError: null });
     try {
@@ -440,7 +445,6 @@ export const useStore = create((set, get) => ({
     }
   },
   
-  // --- NEW: Optimized Resume Function ---
   handleGenerateOptimizedResume: async (jobId, profileId) => {
     set({ isGenerating: true, aiError: null, optimizedResume: '' });
     try {
@@ -516,15 +520,15 @@ export const useStore = create((set, get) => ({
       get().addNotification('Profile saved!');
       
       if (id) {
-          set((state) => ({
-              profiles: state.profiles.map(p => p.id === savedData.id ? savedData : p),
-              loading: false
-          }));
+           set((state) => ({
+               profiles: state.profiles.map(p => p.id === savedData.id ? savedData : p),
+               loading: false
+           }));
       } else {
-          set((state) => ({
-              profiles: [savedData, ...state.profiles],
-              loading: false
-          }));
+           set((state) => ({
+               profiles: [savedData, ...state.profiles],
+               loading: false
+           }));
       }
       
       if (get().profiles.length === 1 && savedData) {
@@ -612,12 +616,12 @@ export const useStore = create((set, get) => ({
       
       if (id) {
            set((state) => ({
-                searches: state.searches.map(s => s.id === savedData.id ? savedData : s),
-            }));
+               searches: state.searches.map(s => s.id === savedData.id ? savedData : s),
+           }));
       } else {
            set((state) => ({
-                searches: [savedData, ...state.searches],
-            }));
+               searches: [savedData, ...state.searches],
+           }));
       }
     } catch (error) {
       get().addNotification(`Error saving search: ${error.message}`, 'error');
@@ -631,7 +635,6 @@ export const useStore = create((set, get) => ({
     get().closeConfirmationModal();
   },
   
-  // --- Job Mutations (Re-routed to backend) ---
   updateJobStatus: async (jobId, newStatus) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/jobs/${jobId}/update-status`, {
@@ -698,7 +701,10 @@ export const useStore = create((set, get) => ({
 
   handleDeleteSelectedJobs: async () => {
     const idsToDelete = Array.from(get().selectedJobIds);
-    if (idsToDelete.length === 0) { /* ... (no change) ... */ }
+    if (idsToDelete.length === 0) { 
+      get().addNotification('No jobs selected.', 'warning');
+      return;
+    }
     
     get().addNotification(`Deleting ${idsToDelete.length} selected job(s)...`, 'info');
     get().closeConfirmationModal();
@@ -718,12 +724,12 @@ export const useStore = create((set, get) => ({
             : state.selectedJob,
       }));
       get().addNotification('Selected jobs deleted.', 'success');
-    } catch (error) {
+    } catch (error)
+      {
       get().addNotification(`Error deleting selected jobs: ${error.message}`, 'error');
     }
   },
 
-  // --- Sign Out Action ---
   handleSignOut: async () => {
     set({ loading: true });
     const { error } = await supabase.auth.signOut();

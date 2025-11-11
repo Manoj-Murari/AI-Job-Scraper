@@ -1,11 +1,13 @@
 # arq_worker.py
 import logging
+import os  # <-- NEW IMPORT
 from datetime import datetime
 from typing import Optional
+from arq.connections import RedisSettings  # <-- NEW IMPORT
 from config import is_ready, supabase
 from core.ai_analysis import get_gemini_analysis
-from core.database import batch_save_jobs # <-- UPDATED IMPORT
-from core.scraping import run_job_scrape 
+from core.database import batch_save_jobs
+from core.scraping import run_job_scrape
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -18,11 +20,6 @@ async def shutdown(ctx):
 
 # --- JOB 1: THE SCRAPER (UPDATED) ---
 async def scrape_and_save(ctx, search_config: dict, user_id: str, search_id: str):
-    """
-    UPDATED "Save-then-Analyze" LOGIC:
-    1. Runs the scraper.
-    2. Calls a single batch_save_jobs function to efficiently save all new jobs.
-    """
     log.info(f"--- WORKER RECEIVED JOB: scrape_and_save (User: {user_id}, Search: {search_id}) ---")
     
     scraped_jobs = run_job_scrape(
@@ -37,16 +34,14 @@ async def scrape_and_save(ctx, search_config: dict, user_id: str, search_id: str
 
     log.info(f"Found {len(scraped_jobs)} jobs. Handing off to batch saver...")
     
-    # Add created_at timestamp to all jobs first
     for job in scraped_jobs:
         job['created_at'] = datetime.now().isoformat()
     
     try:
-        # Call the new batch function ONCE
         saved_count = batch_save_jobs(scraped_jobs, user_id, search_id)
     except Exception as e:
         log.error(f"Failed to batch save jobs: {e}")
-        raise e # Re-raise to fail the job
+        raise e 
             
     log.info(f"--- WORKER FINISHED JOB: scrape_and_save ---")
     return {"status": "ok", "jobs_found": len(scraped_jobs), "newly_saved": saved_count}
@@ -54,18 +49,12 @@ async def scrape_and_save(ctx, search_config: dict, user_id: str, search_id: str
 
 # --- JOB 2: ON-DEMAND AI ANALYST (No changes) ---
 async def analyze_job_on_demand(ctx, job_id: int, profile_id: str, description: Optional[str] = None):
-    """
-    UPDATED "On-Demand" LOGIC:
-    1. Takes an optional 'description'.
-    2. If 'description' is provided, it uses that.
-    3. If 'description' is None, it fetches it from the DB.
-    """
     log.info(f"--- WORKER RECEIVED JOB: analyze_job_on_demand (Job ID: {job_id}, Profile ID: {profile_id}) ---")
     
     if not is_ready():
         raise Exception("Worker not configured (Supabase/Gemini keys missing)")
 
-    job_description = description # Use the passed-in description
+    job_description = description 
 
     try:
         if not job_description:
@@ -109,7 +98,7 @@ async def analyze_job_on_demand(ctx, job_id: int, profile_id: str, description: 
         log.error(f"Failed to process job {job_id}: {e}")
         raise e
 
-# --- WORKER SETTINGS (No changes) ---
+# --- WORKER SETTINGS (THIS IS THE IMPORTANT CHANGE) ---
 class WorkerSettings:
     functions = [
         scrape_and_save,
@@ -117,5 +106,5 @@ class WorkerSettings:
     ] 
     on_startup = startup
     on_shutdown = shutdown
-    redis_host = '127.0.0.1'
-    redis_port = 6379
+    # Use the environment variable from Render/Upstash
+    redis_settings = RedisSettings.from_url(os.getenv('REDIS_URL', 'redis://127.0.0.1:6379'))

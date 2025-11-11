@@ -1,14 +1,16 @@
 # main.py
-from fastapi import FastAPI, HTTPException, Depends, status
-from arq.connections import RedisSettings
-from arq import create_pool
+import asyncio
+import os
 import logging
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, Depends, status
+from arq import create_pool, run_worker
+from arq.connections import RedisSettings
 from pydantic import BaseModel, HttpUrl
 from typing import List, Optional
 from datetime import datetime
-import asyncio
 
-from arq.connections import RedisSettings as Settings 
+# --- Local Imports ---
 from config import is_ready, supabase
 from core.ai_analysis import (
     get_interview_prep, 
@@ -18,21 +20,56 @@ from core.ai_analysis import (
 )
 from core.auth import get_current_user
 from core.ai_crew import run_resume_crew
+from arq_worker import WorkerSettings # <-- IMPORT YOUR WORKER SETTINGS
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
+# --- Lifespan Manager (Replaces startup/shutdown events) ---
+worker_task = None
+ARQ_REDIS = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global ARQ_REDIS, worker_task
+    
+    # 1. Connect to Redis
+    redis_url = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379')
+    log.info(f"Connecting to Redis at {redis_url}...")
+    try:
+        ARQ_REDIS = await create_pool(RedisSettings.from_url(redis_url))
+        log.info("Successfully connected to Redis.")
+    except Exception as e:
+        log.error(f"Failed to connect to Redis: {e}")
+        
+    # 2. Start the Arq worker in the background
+    log.info("Starting background Arq worker...")
+    worker_task = asyncio.create_task(run_worker(WorkerSettings))
+    
+    yield  # The application runs here
+    
+    # 3. Cleanup on shutdown
+    log.info("Shutting down...")
+    if worker_task:
+        worker_task.cancel()
+    if ARQ_REDIS:
+        await ARQ_REDIS.close()
+
+# --- Create the FastAPI App ---
 app = FastAPI(
     title="IntelliApply API",
     description="The new unified backend for IntelliApply 2.0",
-    version="2.0.0"
+    version="2.0.0",
+    lifespan=lifespan  # <-- Use the new lifespan manager
 )
 
 # --- CORS MIDDLEWARE ---
 from fastapi.middleware.cors import CORSMiddleware
+# IMPORTANT: You will add your Vercel URL here in the final step
 origins = [
     "http://localhost:5173",
     "http://localhost:5174",
+    # "https://your-vercel-app-name.vercel.app" # <-- ADD LATER
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -43,23 +80,6 @@ app.add_middleware(
 )
 # --- END CORS MIDDLEWARE ---
 
-ARQ_REDIS = None
-
-@app.on_event("startup")
-async def startup():
-    global ARQ_REDIS
-    log.info("Connecting to Arq/Redis at localhost:6379...")
-    try:
-        ARQ_REDIS = await create_pool(Settings(host='127.0.0.1', port=6379)) 
-        log.info("Successfully connected to Redis.")
-    except Exception as e:
-        log.error(f"Failed to connect to Redis: {e}")
-
-@app.on_event("shutdown")
-async def shutdown():
-    if ARQ_REDIS:
-        await ARQ_REDIS.close()
-        log.info("Closed Redis connection pool.")
 
 @app.get("/")
 async def get_root():
@@ -299,9 +319,6 @@ async def generate_optimized_resume(request: OptimizedResumeRequest, user_id: st
         # 3. Run the CrewAI task
         log.info("Handing off to AI Crew...")
         
-        # --- THIS IS THE FIX ---
-        # The 'asyncio.to_thread' call must be inside the try...except block
-        # to properly catch the exception it raises.
         optimized_resume = await asyncio.to_thread(
             run_resume_crew, 
             job_description=job_description, 
@@ -309,7 +326,6 @@ async def generate_optimized_resume(request: OptimizedResumeRequest, user_id: st
         )
         log.info("AI Crew finished. Returning result.")
         
-        # Check if the crew returned an error string
         if optimized_resume.startswith("Error:"):
             raise Exception(optimized_resume)
             
@@ -319,7 +335,6 @@ async def generate_optimized_resume(request: OptimizedResumeRequest, user_id: st
         log.error(f"HTTP exception: {he.detail}")
         raise he
     except Exception as e:
-        # This will now catch the error from the thread
         log.error(f"Failed to generate optimized resume: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 # --- END NEW ENDPOINT ---
