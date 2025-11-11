@@ -1,3 +1,4 @@
+// src/components/pages/Auth.jsx
 import React from 'react';
 import { Auth as SupabaseAuth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
@@ -12,7 +13,10 @@ export default function Auth() {
                 <SupabaseAuth
                     supabaseClient={supabase}
                     appearance={{ theme: ThemeSupa }}
-                    // providers={['google', 'github']}  <-- WE REMOVED THIS LINE
+                    // --- THIS IS THE FIX ---
+                    // This array now ONLY includes 'google'
+                    providers={['google']} 
+                    // --- END OF FIX ---
                     theme="light"
                 />
             </div>
