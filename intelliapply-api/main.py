@@ -4,7 +4,8 @@ import os
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, status
-from arq import create_pool, run_worker
+from arq import create_pool
+from arq.worker import Worker  # <-- WE CHANGED THIS IMPORT
 from arq.connections import RedisSettings
 from pydantic import BaseModel, HttpUrl
 from typing import List, Optional
@@ -20,12 +21,12 @@ from core.ai_analysis import (
 )
 from core.auth import get_current_user
 from core.ai_crew import run_resume_crew
-from arq_worker import WorkerSettings # <-- IMPORT YOUR WORKER SETTINGS
+from arq_worker import WorkerSettings # <-- This import is correct
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-# --- Lifespan Manager (Replaces startup/shutdown events) ---
+# --- Lifespan Manager (THIS IS THE FIX) ---
 worker_task = None
 ARQ_REDIS = None
 
@@ -37,25 +38,36 @@ async def lifespan(app: FastAPI):
     redis_url = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379')
     log.info(f"Connecting to Redis at {redis_url}...")
     try:
-        # --- THIS IS THE FIX ---
         ARQ_REDIS = await create_pool(RedisSettings.from_dsn(redis_url))
-        # --- END OF FIX ---
         log.info("Successfully connected to Redis.")
     except Exception as e:
         log.error(f"Failed to connect to Redis: {e}")
+        raise e  # Fail fast if Redis connection fails
         
-    # 2. Start the Arq worker in the background
+    # 2. Create the Worker instance
+    # We pass the settings class and the newly created pool
+    worker = Worker(
+        settings_class=WorkerSettings, 
+        redis_pool=ARQ_REDIS
+    )
+
+    # 3. Start the worker in the background using worker.main()
     log.info("Starting background Arq worker...")
-    worker_task = asyncio.create_task(run_worker(WorkerSettings))
+    worker_task = asyncio.create_task(worker.main())
     
     yield  # The application runs here
     
-    # 3. Cleanup on shutdown
-    log.info("Shutting down...")
+    # 4. Cleanup on shutdown
+    log.info("Shutting down worker...")
     if worker_task:
-        worker_task.cancel()
+        # Ask the worker to shut down gracefully
+        await worker.close()
+        await worker_task # Wait for it to finish
+    
+    log.info("Closing Redis connection...")
     if ARQ_REDIS:
         await ARQ_REDIS.close()
+    log.info("Shutdown complete.")
 
 # --- Create the FastAPI App ---
 app = FastAPI(
@@ -400,7 +412,7 @@ async def delete_jobs(request: JobDeleteRequest, user_id: str = Depends(get_curr
         log.error(f"Failed to delete jobs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/v1/jobs/delete-all-untracked")
+@app.post("/api/ventry-level-untracked")
 async def delete_all_untracked_jobs(user_id: str = Depends(get_current_user)):
     try:
         response = supabase.table("jobs") \
