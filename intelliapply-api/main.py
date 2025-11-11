@@ -5,7 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, status
 from arq import create_pool
-from arq.worker import Worker  # <-- WE CHANGED THIS IMPORT
+from arq.worker import Worker  # This import is correct
 from arq.connections import RedisSettings
 from pydantic import BaseModel, HttpUrl
 from typing import List, Optional
@@ -45,11 +45,15 @@ async def lifespan(app: FastAPI):
         raise e  # Fail fast if Redis connection fails
         
     # 2. Create the Worker instance
-    # We pass the settings class and the newly created pool
+    # --- THIS IS THE FIX ---
+    # We manually pass the settings from the class, not the class itself.
     worker = Worker(
-        settings_class=WorkerSettings, 
-        redis_pool=ARQ_REDIS
+        functions=WorkerSettings.functions, 
+        redis_pool=ARQ_REDIS,
+        on_startup=WorkerSettings.on_startup,
+        on_shutdown=WorkerSettings.on_shutdown
     )
+    # --- END OF FIX ---
 
     # 3. Start the worker in the background using worker.main()
     log.info("Starting background Arq worker...")
@@ -60,9 +64,8 @@ async def lifespan(app: FastAPI):
     # 4. Cleanup on shutdown
     log.info("Shutting down worker...")
     if worker_task:
-        # Ask the worker to shut down gracefully
         await worker.close()
-        await worker_task # Wait for it to finish
+        await worker_task
     
     log.info("Closing Redis connection...")
     if ARQ_REDIS:
@@ -74,12 +77,11 @@ app = FastAPI(
     title="IntelliApply API",
     description="The new unified backend for IntelliApply 2.0",
     version="2.0.0",
-    lifespan=lifespan  # <-- Use the new lifespan manager
+    lifespan=lifespan
 )
 
 # --- CORS MIDDLEWARE ---
 from fastapi.middleware.cors import CORSMiddleware
-# IMPORTANT: You will add your Vercel URL here in the final step
 origins = [
     "http://localhost:5173",
     "http://localhost:5174",
@@ -412,7 +414,7 @@ async def delete_jobs(request: JobDeleteRequest, user_id: str = Depends(get_curr
         log.error(f"Failed to delete jobs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/ventry-level-untracked")
+@app.post("/api/v1/jobs/delete-all-untracked")
 async def delete_all_untracked_jobs(user_id: str = Depends(get_current_user)):
     try:
         response = supabase.table("jobs") \
