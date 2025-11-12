@@ -1,7 +1,13 @@
-// src/components/features/KanbanTracker.jsx
-
 import React, { useMemo, useCallback, useState } from 'react';
-import { DndContext, closestCorners, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
+import { 
+  DndContext, 
+  closestCorners, 
+  PointerSensor, 
+  TouchSensor, // <-- 1. IMPORT TOUCHSENSOR
+  useSensor, 
+  useSensors, 
+  DragOverlay 
+} from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Sparkles, Briefcase } from 'lucide-react';
@@ -10,15 +16,13 @@ import { useStore } from '../../lib/store';
 const columnTitles = { 'Applied': 'Applied', 'Interviewing': 'Interviewing', 'Offer': 'Offer', 'Rejected': 'Rejected' };
 const columnColors = { 'Applied': 'bg-sky-500', 'Interviewing': 'bg-purple-500', 'Offer': 'bg-emerald-500', 'Rejected': 'bg-red-500' };
 
-// --- Helper to get company logo (Unchanged) ---
 const getLogoUrl = (companyName) => {
     if (!companyName) {
-        return `https://avatar.vercel.sh/${companyName}.png?text=?`; // Fallback
+        return `https://avatar.vercel.sh/${companyName}.png?text=?`;
     }
     return `https://logo.clearbit.com/${companyName.toLowerCase().replace(/ /g, '')}.com`;
 };
 
-// --- JobCard (Unchanged) ---
 function JobCard({ job, columnId }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
         id: job.id,
@@ -67,7 +71,6 @@ function JobCard({ job, columnId }) {
     );
 }
 
-// --- Column (Unchanged from last time) ---
 function Column({ columnId, title, jobs }) {
     const { setNodeRef } = useSortable({ id: columnId, data: { type: 'Column' } });
 
@@ -91,7 +94,6 @@ function Column({ columnId, title, jobs }) {
     );
 }
 
-// --- Main Component ---
 export default function KanbanTracker({ jobs, updateJobStatus }) {
     const [activeJob, setActiveJob] = useState(null);
 
@@ -108,8 +110,10 @@ export default function KanbanTracker({ jobs, updateJobStatus }) {
         return newColumns;
     }, [jobs]);
 
+    // --- 2. ADD TOUCHSENSOR AND POINTERSENSOR TO 'useSensors' ---
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
     );
 
     const findColumnForJob = useCallback((jobId) => {
@@ -150,9 +154,6 @@ export default function KanbanTracker({ jobs, updateJobStatus }) {
     }, [findColumnForJob, updateJobStatus]);
 
     return (
-        // --- THIS IS THE FIX ---
-        // We wrap the component in a 'max-w-7xl mx-auto' to center it
-        // on large screens, just like your inbox was originally.
         <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
                 <Briefcase className="w-7 h-7" />
@@ -165,7 +166,6 @@ export default function KanbanTracker({ jobs, updateJobStatus }) {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
-                {/* This responsive container is unchanged from last time */}
                 <div className="flex flex-col md:flex-row gap-4 md:overflow-x-auto md:pb-4">
                     <SortableContext items={Object.keys(columns)}>
                         {Object.entries(columns).map(([columnId, columnJobs]) => (

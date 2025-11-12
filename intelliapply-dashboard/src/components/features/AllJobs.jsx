@@ -121,8 +121,8 @@ export default function AllJobs({ jobs, setSelectedJob }) {
                             </div>
                         </div>
                         
-                        <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto flex-shrink-0">
-                            <div className="relative w-full sm:w-auto">
+                        <div className="flex flex-row flex-wrap items-center justify-start sm:justify-end gap-2 w-full md:w-auto flex-shrink-0">
+                            <div className="relative">
                                 <button
                                     onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
                                     className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors w-full"
@@ -168,7 +168,7 @@ export default function AllJobs({ jobs, setSelectedJob }) {
                             <button
                                 onClick={() => handleBulkAnalyze(filteredAndSortedJobs)}
                                 disabled={!activeProfileId || jobsToAnalyzeCount === 0}
-                                className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                                className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Brain className="w-4 h-4" />
                                 AI Analyze ({jobsToAnalyzeCount})
@@ -176,7 +176,7 @@ export default function AllJobs({ jobs, setSelectedJob }) {
 
                             <button
                                 onClick={openAddJobModal}
-                                className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 transition-colors w-full sm:w-auto"
+                                className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 transition-colors"
                             >
                                 <Plus className="w-4 h-4" />
                                 New Job
@@ -194,7 +194,7 @@ export default function AllJobs({ jobs, setSelectedJob }) {
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={handleSelectAll}
-                                className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
                             >
                                 <CheckSquare className="w-4 h-4" />
                                 Select All

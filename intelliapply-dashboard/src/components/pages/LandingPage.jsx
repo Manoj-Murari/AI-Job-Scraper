@@ -2,22 +2,20 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, Search, BrainCircuit, LayoutDashboard, Cpu, Menu, X, Github } from 'lucide-react';
 
-// 1. Header Component (Matches Image)
+// 1. Header Component
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // --- FIX #1: Changed "Sign In" to be a <Link> component ---
   const navLinks = [
     { name: 'Features', href: '#features' },
     { name: 'How It Works', href: '#how-it-works' },
     { name: 'GitHub', href: 'https://github.com/Manoj-Murari/AI-Job-Scraper', external: true },
-    { name: 'Sign In', href: '/app', external: false }, // This will now be rendered as a <Link>
+    { name: 'Sign In', href: '/app', external: false },
   ];
 
   return (
     <header className="bg-white">
       <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
-        {/* Logo */}
         <div className="flex lg:flex-1">
           <Link to="/" className="-m-1.5 p-1.5 flex items-center gap-2">
             <span className="sr-only">IntelliApply</span>
@@ -25,8 +23,6 @@ function Header() {
             <span className="text-xl font-bold text-slate-900">IntelliApply</span>
           </Link>
         </div>
-
-        {/* Mobile Menu Button */}
         <div className="flex lg:hidden">
           <button
             type="button"
@@ -37,11 +33,8 @@ function Header() {
             <Menu className="h-6 w-6" aria-hidden="true" />
           </button>
         </div>
-
-        {/* Desktop Nav Links */}
         <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-8">
           {navLinks.map((item) => (
-            // --- FIX #1 (Continued): Use <Link> for internal links, <a> for external ---
             item.external ? (
               <a
                 key={item.name}
@@ -71,7 +64,6 @@ function Header() {
         </div>
       </nav>
 
-      {/* Mobile Menu Panel */}
       {mobileMenuOpen && (
         <div className="lg:hidden" role="dialog" aria-modal="true">
           <div className="fixed inset-0 z-50" />
@@ -133,7 +125,7 @@ function Header() {
   );
 }
 
-// 2. Hero Component (Padding Fixed)
+// 2. Hero Component (Stats section fixed)
 function Hero() {
   return (
     <div className="bg-white">
@@ -155,19 +147,23 @@ function Hero() {
               </Link>
             </div>
             
-            {/* --- FIX #2: Updated Hero Stats --- */}
-            <div className="mt-16 flex justify-center gap-x-8 sm:gap-x-16">
+            {/* --- THIS IS THE FIX ---
+              - Reduced gap on mobile (gap-x-6) and adjusted larger screen gaps.
+              - Made title text smaller on mobile (text-xl) and larger on sm screens (sm:text-2xl).
+              - Made subtitle text smaller on mobile (text-xs) and larger on sm screens (sm:text-sm).
+            */}
+            <div className="mt-16 flex justify-center gap-x-6 sm:gap-x-12 lg:gap-x-16">
               <div>
-                <span className="block text-2xl font-bold text-slate-900">AI-Powered</span>
-                <span className="text-sm text-slate-500">Smart Rankings</span>
+                <span className="block text-xl sm:text-2xl font-bold text-slate-900">AI-Powered</span>
+                <span className="block text-xs sm:text-sm text-slate-500">Smart Rankings</span>
               </div>
               <div>
-                <span className="block text-2xl font-bold text-slate-900">All-in-One</span>
-                <span className="text-sm text-slate-500">Tracker</span>
+                <span className="block text-xl sm:text-2xl font-bold text-slate-900">All-in-One</span>
+                <span className="block text-xs sm:text-sm text-slate-500">Tracker</span>
               </div>
               <div>
-                <span className="block text-2xl font-bold text-slate-900">24/7</span>
-                <span className="text-sm text-slate-500">Monitoring</span>
+                <span className="block text-xl sm:text-2xl font-bold text-slate-900">24/7</span>
+                <span className="block text-xs sm:text-sm text-slate-500">Monitoring</span>
               </div>
             </div>
             {/* --- END OF FIX --- */}
@@ -179,7 +175,7 @@ function Hero() {
   );
 }
 
-// 3. Features Component (Hovers Added)
+// 3. Features Component
 const features = [
   {
     name: 'Automated Job Scraping',
@@ -248,7 +244,7 @@ function Features() {
   );
 }
 
-// 4. "How It Works" Component (Hovers Added)
+// 4. "How It Works" Component
 const steps = [
   {
     number: '01',
@@ -305,7 +301,7 @@ function HowItWorks() {
 }
 
 
-// 5. Footer Component (Hovers Added)
+// 5. Footer Component
 function Footer() {
   return (
     <div className="bg-white">

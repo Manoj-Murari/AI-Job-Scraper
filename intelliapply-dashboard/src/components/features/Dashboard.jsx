@@ -145,9 +145,10 @@ export default function Dashboard({ setSelectedJob, onTriggerJobSearch, isSearch
                               </div>
                           </div>
                           
-                          <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto flex-shrink-0">
+                          {/* --- THIS IS THE FIX --- */}
+                          <div className="flex flex-row flex-wrap items-center justify-start sm:justify-end gap-2 w-full md:w-auto flex-shrink-0">
                               
-                              <div className="relative w-full sm:w-auto">
+                              <div className="relative">
                                   <button
                                       onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
                                       className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors w-full"
@@ -190,32 +191,24 @@ export default function Dashboard({ setSelectedJob, onTriggerJobSearch, isSearch
                                   )}
                               </div>
 
-                              <div className="relative rounded-lg border border-slate-300 bg-white/50 shadow-sm p-1.5 w-full sm:w-auto">
-                                <div className="absolute -top-2.5 left-2">
-                                    <span className="px-2 py-0.5 text-xs font-semibold text-sky-700 bg-sky-100 rounded-full border border-slate-300">
-                                        AI Powered
-                                    </span>
-                                </div>
-                                <div className="flex flex-col sm:flex-row items-center gap-2 pt-2">
-                                    <button
-                                        onClick={() => handleBulkAnalyze(filteredAndSortedJobs)}
-                                        disabled={!activeProfileId || jobsToAnalyzeCount === 0}
-                                        className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-                                    >
-                                        <Brain className="w-4 h-4" />
-                                        Analyze ({jobsToAnalyzeCount})
-                                    </button>
-                                    <button
-                                        onClick={onTriggerJobSearch}
-                                        disabled={isSearching}
-                                        className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 transition-all disabled:bg-sky-300 w-full sm:w-auto"
-                                    >
-                                        {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                                        Find Jobs
-                                    </button>
-                                </div>
-                              </div>
+                              <button
+                                  onClick={() => handleBulkAnalyze(filteredAndSortedJobs)}
+                                  disabled={!activeProfileId || jobsToAnalyzeCount === 0}
+                                  className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                  <Brain className="w-4 h-4" />
+                                   Analyze ({jobsToAnalyzeCount})
+                              </button>
+                              <button
+                                  onClick={onTriggerJobSearch}
+                                  disabled={isSearching}
+                                  className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 transition-all disabled:bg-sky-300 tour-step-2-find-jobs"
+                              >
+                                  {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                                  Find Jobs
+                              </button>
                           </div>
+                          {/* --- END OF FIX --- */}
                       </>
                   ) : (
                       <>
@@ -228,7 +221,7 @@ export default function Dashboard({ setSelectedJob, onTriggerJobSearch, isSearch
                           <div className="flex items-center gap-4">
                               <button
                                   onClick={handleSelectAll}
-                                  className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+                                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
                               >
                                   <CheckSquare className="w-4 h-4" />
                                   Select All
