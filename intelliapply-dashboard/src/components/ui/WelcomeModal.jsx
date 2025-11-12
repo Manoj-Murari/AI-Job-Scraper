@@ -1,16 +1,11 @@
 import React from 'react';
 import { X, UserPlus, Sparkles } from 'lucide-react';
 import { useStore } from '../../lib/store';
+import { Link } from 'react-router-dom';
 
 export default function WelcomeModal({ isOpen, onClose }) {
-  const setView = useStore(state => state.setView);
 
   const handleGoToProfiles = () => {
-    // --- THIS IS THE FIX ---
-    // The view is 'settings', not 'profiles'.
-    // The 'Settings' page will automatically open to the 'profiles' tab.
-    setView('settings');
-    // --- END OF FIX ---
     onClose();
   };
 
@@ -31,13 +26,14 @@ export default function WelcomeModal({ isOpen, onClose }) {
             The AI needs this profile to analyze jobs and tailor content for you.
           </p>
           
-          <button
+          <Link
+            to="/app/settings"
             onClick={handleGoToProfiles}
             className="w-full flex items-center justify-center gap-2 px-6 py-3 font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 transition-all text-lg"
           >
             <UserPlus className="w-5 h-5" />
             Create Your First Profile
-          </button>
+          </Link>
         </div>
       </div>
     </div>

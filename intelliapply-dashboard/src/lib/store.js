@@ -34,7 +34,6 @@ const getErrorMessage = async (response) => {
 
 
 export const useStore = create((set, get) => ({
-  view: 'inbox',
   allJobs: [],
   profiles: [],
   searches: [],
@@ -64,7 +63,6 @@ export const useStore = create((set, get) => ({
   isSearchModalOpen: false,
   selectedJobIds: new Set(),
 
-  setView: (view) => set({ view }),
   setSelectedJob: (job) => set({ selectedJob: job }),
   setActiveProfileId: (profileId) => set({ activeProfileId: profileId }),
 
@@ -126,8 +124,9 @@ export const useStore = create((set, get) => ({
       if (profiles.length === 0) {
         set({ isWelcomeModalOpen: true });
       } else {
+        const activeId = get().activeProfileId || profiles[0].id;
         if (!get().activeProfileId) {
-          set({ activeProfileId: profiles[0].id });
+          set({ activeProfileId: activeId });
         }
       }
       
@@ -168,17 +167,13 @@ export const useStore = create((set, get) => ({
 
   subscribeToJobs: () => {
     if (get().channel) return;
-
     const mergeJobUpdate = (oldJob, newPayload) => ({ ...oldJob, ...newPayload });
-
     const channel = supabase
       .channel('public:jobs')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'jobs' },
         (payload) => {
-          console.log('Realtime payload received:', payload);
-          
           if (payload.eventType === 'INSERT') {
             set((state) => ({
               allJobs: [payload.new, ...state.allJobs],
@@ -188,7 +183,6 @@ export const useStore = create((set, get) => ({
                 get().addNotification(`New job found: ${payload.new.title}`, 'info');
             }
           }
-          
           if (payload.eventType === 'UPDATE') {
              set((state) => ({
                 allJobs: state.allJobs.map((job) =>
@@ -206,7 +200,6 @@ export const useStore = create((set, get) => ({
                  get().addNotification(`AI Analysis complete for: ${payload.new.title}`, 'success');
               }
           }
-          
           if (payload.eventType === 'DELETE') {
              set((state) => ({
                 allJobs: state.allJobs.filter((job) => job.id !== payload.old.id),
@@ -220,7 +213,6 @@ export const useStore = create((set, get) => ({
         }
       )
       .subscribe();
-
     set({ channel });
   },
 
@@ -244,7 +236,6 @@ export const useStore = create((set, get) => ({
     }
     set({ isSearching: true });
     get().addNotification(`Starting scrape for ${searches.length} saved search(es)...`, 'info');
-    
     try {
       const authHeaders = await getAuthHeaders();
       for (const search of searches) {
@@ -260,7 +251,6 @@ export const useStore = create((set, get) => ({
         });
         if (!response.ok) throw new Error(await getErrorMessage(response));
       }
-      
       setTimeout(() => {
         if (get().isSearching) {
           set({ isSearching: false });
@@ -270,7 +260,6 @@ export const useStore = create((set, get) => ({
           );
         }
       }, 30000);
-      
     } catch (error) {
       get().addNotification(`Error triggering scrape: ${error.message}`, 'error');
       set({ isSearching: false });
@@ -282,7 +271,6 @@ export const useStore = create((set, get) => ({
       get().addNotification('Could not start analysis: No profile selected.', 'error');
       return;
     }
-
     get().addNotification('Sending job to AI for analysis...', 'info');
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/jobs/${jobId}/analyze`, {
@@ -306,16 +294,13 @@ export const useStore = create((set, get) => ({
       get().addNotification('Please select an active profile first.', 'error');
       return;
     }
-    
     const jobIdsToAnalyze = jobsToAnalyze
       .filter(job => !job.gemini_rating && job.description)
       .map(job => job.id);
-      
     if (jobIdsToAnalyze.length === 0) {
       get().addNotification('No new jobs with descriptions to analyze.', 'info');
       return;
     }
-    
     get().addNotification(`Sending ${jobIdsToAnalyze.length} jobs for analysis...`, 'info');
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/jobs/bulk-analyze`, {
@@ -327,10 +312,8 @@ export const useStore = create((set, get) => ({
         })
       });
       if (!response.ok) throw new Error(await getErrorMessage(response));
-      
       const data = await response.json();
       get().addNotification(data.message, 'success');
-      
     } catch (error) {
        get().addNotification(`Error starting bulk analysis: ${error.message}`, 'error');
     }
@@ -344,11 +327,9 @@ export const useStore = create((set, get) => ({
             body: JSON.stringify(jobData),
         });
         if (!response.ok) throw new Error(await getErrorMessage(response));
-        
         get().addNotification('Job saved successfully!', 'success');
         get().closeAddJobModal();
         return true;
-        
       } catch (error) {
         get().addNotification(`${error.message}`, 'error');
         return false;
@@ -408,7 +389,6 @@ export const useStore = create((set, get) => ({
       get().addNotification('No profile selected.', 'error');
       return;
     }
-    
     set({ isGenerating: true, interviewPrepData: null, aiError: null });
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/ai/interview-prep`, {
@@ -455,15 +435,12 @@ export const useStore = create((set, get) => ({
     set({ loading: true });
     let savedData = null;
     let user = null;
-    
     try {
       const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
       if (userError || !authUser) throw new Error(userError?.message || 'You must be logged in to save a profile.');
       user = authUser;
-
       const { id, ...profileData } = profile;
       const dataToSave = { ...profileData, user_id: user.id };
-
       let error;
       if (id) {
         const { data, error: updateError } = await supabase.from('profiles').update(dataToSave).eq('id', id).select().single();
@@ -475,34 +452,26 @@ export const useStore = create((set, get) => ({
         savedData = data;
       }
       if (error) throw error;
-      
       if (file) {
         const fileExt = file.name.split('.').pop();
         const filePath = `${user.id}/${savedData.id}/resume.${fileExt}`;
-        
         const { error: uploadError } = await supabase.storage
           .from('resumes')
           .upload(filePath, file, { upsert: true });
-          
         if (uploadError) throw uploadError;
-        
         const { data: urlData } = supabase.storage
           .from('resumes')
           .getPublicUrl(filePath);
-          
         const { data: updatedProfile, error: urlSaveError } = await supabase
           .from('profiles')
           .update({ resume_file_url: urlData.publicUrl })
           .eq('id', savedData.id)
           .select()
           .single();
-          
         if (urlSaveError) throw urlSaveError;
         savedData = updatedProfile;
       }
-
       get().addNotification('Profile saved!');
-      
       if (id) {
            set((state) => ({
                profiles: state.profiles.map(p => p.id === savedData.id ? savedData : p),
@@ -514,11 +483,9 @@ export const useStore = create((set, get) => ({
                loading: false
            }));
       }
-      
       if (get().profiles.length === 1 && savedData) {
         set({ activeProfileId: savedData.id });
       }
-
     } catch (error) {
       get().addNotification(`Error saving profile: ${error.message}`, 'error');
       set({ loading: false });
@@ -527,35 +494,27 @@ export const useStore = create((set, get) => ({
   
   handleRemoveResume: async (profile) => {
     if (!profile?.resume_file_url) return;
-    
     set({ loading: true });
     try {
       const url = new URL(profile.resume_file_url);
       const filePath = url.pathname.split('/resumes/')[1];
-
       if (!filePath) throw new Error("Could not parse file path from URL.");
-
       const { error: removeError } = await supabase.storage
         .from('resumes')
         .remove([filePath]);
-        
       if (removeError) throw removeError;
-      
       const { data: updatedProfile, error: dbError } = await supabase
         .from('profiles')
         .update({ resume_file_url: null })
         .eq('id', profile.id)
         .select()
         .single();
-        
       if (dbError) throw dbError;
-
       get().addNotification('Resume file removed.');
       set((state) => ({
           profiles: state.profiles.map(p => p.id === updatedProfile.id ? updatedProfile : p),
           loading: false
       }));
-
     } catch (error) {
       get().addNotification(`Error removing resume: ${error.message}`, 'error');
       set({ loading: false });
@@ -565,14 +524,11 @@ export const useStore = create((set, get) => ({
   handleDeleteProfile: async (id) => {
     await supabase.from('profiles').delete().eq('id', id);
     get().addNotification('Profile deleted.');
-    
     const remainingProfiles = get().profiles.filter((p) => p.id !== id);
     set({ profiles: remainingProfiles });
-    
     if (get().activeProfileId === id) {
       set({ activeProfileId: remainingProfiles.length > 0 ? remainingProfiles[0].id : null });
     }
-    
     get().closeConfirmationModal();
   },
 
@@ -580,10 +536,8 @@ export const useStore = create((set, get) => ({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('You must be logged in to save a search.');
-
       const { id, ...searchData } = search;
       const dataToSave = { ...searchData, user_id: user.id, profile_id: null }; 
-
       let error, savedData;
       if (id) {
         const { data, error: updateError } = await supabase.from('searches').update(dataToSave).eq('id', id).select().single();
@@ -595,9 +549,7 @@ export const useStore = create((set, get) => ({
         savedData = data;
       }
       if (error) throw error;
-      
       get().addNotification('Search saved!');
-      
       if (id) {
            set((state) => ({
                searches: state.searches.map(s => s.id === savedData.id ? savedData : s),
@@ -649,7 +601,6 @@ export const useStore = create((set, get) => ({
   handleDeleteJob: async (jobId) => {
     if (!jobId) return;
     if (get().selectedJob?.id === jobId) set({ selectedJob: null });
-    
     get().addNotification('Deleting job...', 'info');
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/jobs/delete`, {
@@ -675,7 +626,6 @@ export const useStore = create((set, get) => ({
         headers: await getAuthHeaders(),
       });
       if (!response.ok) throw new Error(await getErrorMessage(response));
-      
       set({ selectedJob: null, selectedJobIds: new Set() });
       get().addNotification('All non-tracked jobs deleted.', 'success');
     } catch (error) {
@@ -689,7 +639,6 @@ export const useStore = create((set, get) => ({
       get().addNotification('No jobs selected.', 'warning');
       return;
     }
-    
     get().addNotification(`Deleting ${idsToDelete.length} selected job(s)...`, 'info');
     get().closeConfirmationModal();
     try {
@@ -699,7 +648,6 @@ export const useStore = create((set, get) => ({
         body: JSON.stringify({ job_ids: idsToDelete }),
       });
       if (!response.ok) throw new Error(await getErrorMessage(response));
-
       set((state) => ({
         selectedJobIds: new Set(),
         selectedJob:

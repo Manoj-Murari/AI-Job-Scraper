@@ -10,44 +10,29 @@ import {
     Archive,
     Menu,
     X,
-    Cpu
+    Cpu,
+    Zap
 } from 'lucide-react';
 import { useStore } from '../../lib/store';
 import { supabase } from '../../lib/supabaseClient';
-import { Link } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 
-function NavLink({ view, setView, currentView, viewName, children }) {
-  const isActive = currentView === viewName;
-  return (
-    <button
-      onClick={() => setView(viewName)}
-      className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-        isActive
-          ? 'bg-sky-100 text-sky-700'
-          : 'text-slate-600 hover:bg-slate-100'
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function MobileNavLink({ view, setView, currentView, viewName, children, onClick }) {
-    const isActive = currentView === viewName;
+function MobileNavLink({ to, children, onClick }) {
     return (
-        <button
-            onClick={() => {
-                setView(viewName);
-                onClick();
-            }}
-            className={`flex items-center gap-3 w-full text-left rounded-md p-3 text-base font-medium ${
+        <NavLink
+            to={to}
+            end={to === "/app"}
+            onClick={onClick}
+            className={({ isActive }) =>
+              `flex items-center gap-3 w-full text-left rounded-md p-3 text-base font-medium ${
                 isActive
                     ? 'bg-sky-100 text-sky-700'
                     : 'text-slate-700 hover:bg-slate-100'
-            }`}
+            }`
+            }
         >
             {children}
-        </button>
+        </NavLink>
     );
 }
 
@@ -74,14 +59,12 @@ function Avatar({ email }) {
 }
 
 export default function Header() {
-  const view = useStore((state) => state.view);
-  const setView = useStore((state) => state.setView);
   const isSearching = useStore((state) => state.isSearching);
   const handleSignOut = useStore((state) => state.handleSignOut);
   const profiles = useStore((state) => state.profiles);
   const activeProfileId = useStore((state) => state.activeProfileId);
   const setActiveProfileId = useStore((state) => state.setActiveProfileId);
-
+  
   const [userEmail, setUserEmail] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -132,10 +115,31 @@ export default function Header() {
 
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-2">
-                <NavLink view={view} setView={setView} currentView={view} viewName="inbox"><Inbox className="w-4 h-4" />Inbox</NavLink>
-                <NavLink view={view} setView={setView} currentView={view} viewName="library"><Archive className="w-4 h-4" />Job Library</NavLink>
-                <NavLink view={view} setView={setView} currentView={view} viewName="tracker"><Briefcase className="w-4 h-4" />Tracker</NavLink>
-                <NavLink view={view} setView={setView} currentView={view} viewName="analytics"><BarChart3 className="w-4 h-4" />Analytics</NavLink>
+                <NavLink 
+                  to="/app" 
+                  end
+                  className={({ isActive }) => `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-sky-100 text-sky-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                >
+                  <Inbox className="w-4 h-4" />Inbox
+                </NavLink>
+                <NavLink 
+                  to="/app/library" 
+                  className={({ isActive }) => `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-sky-100 text-sky-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                >
+                  <Archive className="w-4 h-4" />Job Library
+                </NavLink>
+                <NavLink 
+                  to="/app/tracker" 
+                  className={({ isActive }) => `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-sky-100 text-sky-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                >
+                  <Briefcase className="w-4 h-4" />Tracker
+                </NavLink>
+                <NavLink 
+                  to="/app/analytics" 
+                  className={({ isActive }) => `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-sky-100 text-sky-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                >
+                  <BarChart3 className="w-4 h-4" />Analytics
+                </NavLink>
                 
                 <button
                   disabled
@@ -184,22 +188,20 @@ export default function Header() {
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden animate-fade-in-down">
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden animate-fade-in-down z-50">
                     <div className="p-4 border-b border-slate-100">
                       <p className="text-sm text-slate-500">Signed in as</p>
                       <p className="font-semibold text-slate-800 truncate" title={userEmail}>{userEmail || "Loading..."}</p>
                     </div>
                     <nav className="p-2">
-                      <button
-                        onClick={() => {
-                          setView('settings');
-                          setIsDropdownOpen(false);
-                        }}
+                      <Link
+                        to="/app/settings"
+                        onClick={() => setIsDropdownOpen(false)}
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-100"
                       >
                         <Settings className="w-4 h-4" />
                         Settings
-                      </button>
+                      </Link>
                       <button
                         onClick={handleSignOut}
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
@@ -216,18 +218,18 @@ export default function Header() {
         </div>
 
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white shadow-lg p-4 space-y-4">
+          <div className="md:hidden border-t border-slate-200 bg-white shadow-lg p-4 space-y-4 z-30 relative">
             <nav className="space-y-1">
-              <MobileNavLink view={view} setView={setView} currentView={view} viewName="inbox" onClick={() => setIsMobileMenuOpen(false)}>
+              <MobileNavLink to="/app" onClick={() => setIsMobileMenuOpen(false)}>
                 <Inbox className="w-5 h-5" />Inbox
               </MobileNavLink>
-              <MobileNavLink view={view} setView={setView} currentView={view} viewName="library" onClick={() => setIsMobileMenuOpen(false)}>
+              <MobileNavLink to="/app/library" onClick={() => setIsMobileMenuOpen(false)}>
                 <Archive className="w-5 h-5" />Job Library
               </MobileNavLink>
-              <MobileNavLink view={view} setView={setView} currentView={view} viewName="tracker" onClick={() => setIsMobileMenuOpen(false)}>
+              <MobileNavLink to="/app/tracker" onClick={() => setIsMobileMenuOpen(false)}>
                 <Briefcase className="w-5 h-5" />Tracker
               </MobileNavLink>
-              <MobileNavLink view={view} setView={setView} currentView={view} viewName="analytics" onClick={() => setIsMobileMenuOpen(false)}>
+              <MobileNavLink to="/app/analytics" onClick={() => setIsMobileMenuOpen(false)}>
                 <BarChart3 className="w-5 h-5" />Analytics
               </MobileNavLink>
               

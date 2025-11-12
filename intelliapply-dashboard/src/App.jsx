@@ -7,7 +7,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/app" element={<AuthOrDashboard />} />
+      <Route path="/app/*" element={<AuthOrDashboard />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

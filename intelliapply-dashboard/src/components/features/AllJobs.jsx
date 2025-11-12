@@ -71,24 +71,14 @@ export default function AllJobs({ jobs, setSelectedJob }) {
         setSortOrder(e.target.value);
     };
 
-    const onDeleteAllClick = () => {
-        setIsMenuOpen(false);
-        openConfirmationModal(
-            "Delete All Jobs",
-            "This will permanently delete all jobs that are NOT on your tracker. Are you sure?",
-            () => handleDeleteAllJobs()
-        );
-    };
-
     const onDeleteSelectedClick = () => {
-        setIsMenuOpen(false);
         if (selectedJobIds.size === 0) {
             useStore.getState().addNotification("No jobs selected.", "warning");
             return;
         }
         openConfirmationModal(
             `Delete ${selectedJobIds.size} Job(s)`,
-            `Are you sure you want to permanently delete ${selectedJobIds.size} selected job(s)? (Tracked jobs will be skipped)`,
+            `Are you sure you want to permanently delete ${selectedJobIds.size} selected job(s)?`,
             () => handleDeleteSelectedJobs()
         );
     };
@@ -103,11 +93,11 @@ export default function AllJobs({ jobs, setSelectedJob }) {
 
     return (
         <div>
-            <div className={`flex ${selectedJobIds.size === 0 ? 'flex-col md:flex-row' : 'flex-row'} justify-between items-center gap-4 mb-6`}>
+            <div className={`flex ${selectedJobIds.size === 0 ? 'flex-col sm:flex-row' : 'flex-row'} justify-between items-center gap-4 mb-6`}>
                 {selectedJobIds.size === 0 ? (
                     <>
-                        <div className="flex-1 w-full md:max-w-2xl">
-                            <div className="relative">
+                        <div className="flex-1 w-full sm:max-w-xs">
+                            <div className="relative flex items-center">
                                 <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                                     <Search className="w-5 h-5 text-slate-400" />
                                 </span>
@@ -116,59 +106,58 @@ export default function AllJobs({ jobs, setSelectedJob }) {
                                     placeholder="Search your saved jobs..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full bg-white border border-slate-300 rounded-lg pl-12 pr-4 py-2.5 text-sm shadow-sm"
+                                    className="w-full bg-white border border-slate-300 rounded-lg pl-12 pr-12 py-2.5 text-sm shadow-sm"
                                 />
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                                    <button
+                                        onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
+                                        className="p-2 rounded-md text-slate-500 hover:bg-slate-100 transition-colors"
+                                        aria-label="Filter and Sort"
+                                    >
+                                        <Filter className="w-4 h-4" />
+                                    </button>
+                                    {isFilterMenuOpen && (
+                                        <div 
+                                            className="absolute right-0 top-10 w-64 bg-white rounded-md shadow-lg border border-slate-200 z-30"
+                                            onMouseLeave={() => setIsFilterMenuOpen(false)}
+                                        >
+                                            <div className="p-3 space-y-3">
+                                                <div>
+                                                    <label className="block text-xs font-medium text-slate-500 mb-1">Sort by</label>
+                                                    <select
+                                                        value={sortOrder}
+                                                        onChange={handleSortChange} 
+                                                        className="w-full bg-white border border-slate-300 rounded-md px-3 py-1.5 text-sm font-medium"
+                                                    >
+                                                        {sortOptions.map(option => (
+                                                            <option key={option.value} value={option.value}>{option.label}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-medium text-slate-500 mb-1">Platform</label>
+                                                    <select
+                                                        value={platformFilter}
+                                                        onChange={handleFilterChange} 
+                                                        className="w-full bg-white border border-slate-300 rounded-md px-3 py-1.5 text-sm font-medium"
+                                                    >
+                                                        {platformFilterOptions.map(option => (
+                                                            <option key={option.value} value={option.value}>{option.label}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         
-                        <div className="flex flex-row flex-wrap items-center justify-start sm:justify-end gap-2 w-full md:w-auto flex-shrink-0">
-                            <div className="relative">
-                                <button
-                                    onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
-                                    className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors w-full"
-                                >
-                                    <Filter className="w-4 h-4" />
-                                    Filter & Sort
-                                </button>
-                                {isFilterMenuOpen && (
-                                    <div 
-                                        className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-slate-200 z-30"
-                                        onMouseLeave={() => setIsFilterMenuOpen(false)}
-                                    >
-                                        <div className="p-3 space-y-3">
-                                            <div>
-                                                <label className="block text-xs font-medium text-slate-500 mb-1">Sort by</label>
-                                                <select
-                                                    value={sortOrder}
-                                                    onChange={handleSortChange} 
-                                                    className="w-full bg-white border border-slate-300 rounded-md px-3 py-1.5 text-sm font-medium"
-                                                >
-                                                    {sortOptions.map(option => (
-                                                        <option key={option.value} value={option.value}>{option.label}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-medium text-slate-500 mb-1">Platform</label>
-                                                <select
-                                                    value={platformFilter}
-                                                    onChange={handleFilterChange} 
-                                                    className="w-full bg-white border border-slate-300 rounded-md px-3 py-1.5 text-sm font-medium"
-                                                >
-                                                    {platformFilterOptions.map(option => (
-                                                        <option key={option.value} value={option.value}>{option.label}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            
+                        <div className="flex flex-row flex-nowrap items-center justify-end gap-2 w-full sm:w-auto flex-shrink-0">
                             <button
                                 onClick={() => handleBulkAnalyze(filteredAndSortedJobs)}
                                 disabled={!activeProfileId || jobsToAnalyzeCount === 0}
-                                className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Brain className="w-4 h-4" />
                                 AI Analyze ({jobsToAnalyzeCount})
@@ -176,7 +165,7 @@ export default function AllJobs({ jobs, setSelectedJob }) {
 
                             <button
                                 onClick={openAddJobModal}
-                                className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 transition-colors"
+                                className="flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 transition-colors"
                             >
                                 <Plus className="w-4 h-4" />
                                 New Job

@@ -1,8 +1,7 @@
-// src/MainDashboard.jsx
 import React, { useEffect } from 'react';
 import { useStore } from './lib/store';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
-// --- COMPONENT IMPORTS ---
 import Header from './components/layout/Header';
 import Dashboard from './components/features/Dashboard';
 import AllJobs from './components/features/AllJobs';
@@ -23,21 +22,17 @@ import AddJobModal from './components/features/AddJobModal';
 import OptimizedResumeModal from './components/features/OptimizedResumeModal';
 
 export default function MainDashboard() {
-    // Get all state from the store
     const {
-        view,
         selectedJob, setSelectedJob,
         fetchAllData, subscribeToJobs, unsubscribeFromJobs,
         handleTriggerJobSearch,
         isSearching,
         loading,
-        // --- All Modal State ---
         isTailorModalOpen, openTailorModal, closeTailorModal,
         isCoverLetterModalOpen, openCoverLetterModal, closeCoverLetterModal,
         isInterviewPrepModalOpen, openInterviewPrepModal, closeInterviewPrepModal,
         isApplicationHelperOpen, openApplicationHelper, closeApplicationHelper,
         isOptimizedResumeModalOpen, openOptimizedResumeModal, closeOptimizedResumeModal,
-        // --- End Modal State ---
         modalState, closeConfirmationModal,
         notifications, removeNotification,
         isWelcomeModalOpen, closeWelcomeModal,
@@ -74,36 +69,46 @@ export default function MainDashboard() {
             
             <Header />
             
-            {/* --- THIS IS THE FIX ---
-              - We are ADDING BACK 'max-w-7xl' and 'mx-auto'.
-              - This will create the "gaps" on the left and right
-              - and align your main content with the header.
-            */}
-            <main className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-                
-                {/* --- Main Page Router --- */}
-                {view === 'inbox' && (
-                  <Dashboard 
+            <main className="w-full p-4 sm:p-6 lg:p-8">
+              <Routes>
+                <Route 
+                  index 
+                  element={
+                    <Dashboard 
                       setSelectedJob={setSelectedJob} 
                       onTriggerJobSearch={handleTriggerJobSearch} 
                       isSearching={isSearching} 
-                  />
-                )}
-                {view === 'library' && (
-                  <AllJobs 
+                    />
+                  } 
+                />
+                <Route 
+                  path="library" 
+                  element={
+                    <AllJobs 
                       jobs={allJobs} 
                       setSelectedJob={setSelectedJob} 
-                  />
-                )}
-                {view === 'tracker' && (
-                  <KanbanTracker 
+                    />
+                  } 
+                />
+                <Route 
+                  path="tracker" 
+                  element={
+                    <KanbanTracker 
                       jobs={allJobs} 
                       updateJobStatus={updateJobStatus} 
-                      setSelectedJob={setSelectedJob} 
-                  />
-                )}
-                {view === 'analytics' && <Analytics jobs={allJobs} profiles={profiles} searches={searches} />}
-                {view === 'settings' && <Settings />} 
+                    />
+                  } 
+                />
+                <Route 
+                  path="analytics" 
+                  element={<Analytics jobs={allJobs} profiles={profiles} searches={searches} />} 
+                />
+                <Route 
+                  path="settings" 
+                  element={<Settings />} 
+                />
+                <Route path="*" element={<Navigate to="/app" replace />} />
+              </Routes>
             </main>
             
             <JobDetailsPanel 
@@ -116,7 +121,6 @@ export default function MainDashboard() {
                 activeProfile={activeProfile} 
             />
             
-            {/* --- Modals and Toasts --- */}
             <WelcomeModal isOpen={isWelcomeModalOpen} onClose={closeWelcomeModal} />
             <SearchModal isOpen={isSearchModalOpen} onClose={closeSearchModal} />
             <AddJobModal isOpen={isAddJobModalOpen} onClose={closeAddJobModal} />
@@ -134,8 +138,8 @@ export default function MainDashboard() {
             />
             <ConfirmationModal isOpen={modalState.isOpen} onClose={closeConfirmationModal} onConfirm={modalState.onConfirm} title={modalState.title} message={modalState.message} />
             
-            <div aria-live="assertive" className="fixed inset-0 flex items-end px-4 py-6 pointer-events-none sm:p-6 sm-items-end">
-                <div className="w-full flex flex-col items-center space-y-4 sm-items-end">
+            <div aria-live="assertive" className="fixed inset-0 flex items-end px-4 py-6 pointer-events-none sm:p-6 sm:items-end">
+                <div className="w-full flex flex-col items-center space-y-4 sm:items-end">
                     {notifications.map(notification => ( <Toast key={notification.id} notification={notification} onDismiss={removeNotification} /> ))}
                 </div>
             </div>
