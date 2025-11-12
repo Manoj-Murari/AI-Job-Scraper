@@ -6,7 +6,11 @@ export default function WelcomeModal({ isOpen, onClose }) {
   const setView = useStore(state => state.setView);
 
   const handleGoToProfiles = () => {
-    setView('profiles');
+    // --- THIS IS THE FIX ---
+    // The view is 'settings', not 'profiles'.
+    // The 'Settings' page will automatically open to the 'profiles' tab.
+    setView('settings');
+    // --- END OF FIX ---
     onClose();
   };
 

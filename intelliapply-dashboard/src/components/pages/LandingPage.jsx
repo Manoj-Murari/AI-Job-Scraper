@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Briefcase, Search, BrainCircuit, LayoutDashboard, Cpu, Menu, X, Github } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
-// 1. Header Component
+// 1. Header Component (Hash Link Fix)
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -40,18 +40,24 @@ function Header() {
 
         {/* Desktop Nav Links */}
         <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-8">
-          {navLinks.map((item) => (
-            item.external ? (
-              <a
-                key={item.name}
-                href={item.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-semibold leading-6 text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                {item.name}
-              </a>
-            ) : (
+          {navLinks.map((item) => {
+            // --- THIS IS THE FIX ---
+            // Use <a> for hash links or external links
+            if (item.href.startsWith('#') || item.external) {
+              return (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  target={item.external ? '_blank' : '_self'}
+                  rel={item.external ? 'noopener noreferrer' : ''}
+                  className="text-sm font-semibold leading-6 text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  {item.name}
+                </a>
+              );
+            }
+            // Use <Link> only for internal app routes like /app
+            return (
               <Link
                 key={item.name}
                 to={item.href}
@@ -59,8 +65,9 @@ function Header() {
               >
                 {item.name}
               </Link>
-            )
-          ))}
+            );
+            // --- END OF FIX ---
+          })}
           <Link
             to="/app"
             className="rounded-md bg-sky-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 transition-colors"
@@ -93,27 +100,34 @@ function Header() {
             <div className="mt-6 flow-root">
               <div className="-my-6 divide-y divide-slate-500/10">
                 <div className="space-y-2 py-6">
-                  {navLinks.map((item) => (
-                    item.external ? (
-                      <a
-                        key={item.name}
-                        href={item.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-slate-900 hover:bg-slate-50"
-                      >
-                        {item.name}
-                      </a>
-                    ) : (
+                  {navLinks.map((item) => {
+                    // --- APPLY SAME FIX TO MOBILE MENU ---
+                    if (item.href.startsWith('#') || item.external) {
+                      return (
+                        <a
+                          key={item.name}
+                          href={item.href}
+                          target={item.external ? '_blank' : '_self'}
+                          rel={item.external ? 'noopener noreferrer' : ''}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-slate-900 hover:bg-slate-50"
+                        >
+                          {item.name}
+                        </a>
+                      );
+                    }
+                    return (
                       <Link
                         key={item.name}
                         to={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
                         className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-slate-900 hover:bg-slate-50"
                       >
                         {item.name}
                       </Link>
-                    )
-                  ))}
+                    );
+                    // --- END OF FIX ---
+                  })}
                 </div>
                 <div className="py-6">
                   <Link
@@ -333,17 +347,13 @@ function Footer() {
 export default function LandingPage() {
   const navigate = useNavigate();
 
-  // --- THIS IS THE FIX ---
   useEffect(() => {
-    // Check if a user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        // If logged in, redirect to the app dashboard
         navigate('/app', { replace: true });
       }
     });
 
-    // Also listen for the successful login event
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -356,7 +366,6 @@ export default function LandingPage() {
       subscription.unsubscribe();
     };
   }, [navigate]);
-  // --- END OF FIX ---
 
   return (
     <div className="bg-white">
