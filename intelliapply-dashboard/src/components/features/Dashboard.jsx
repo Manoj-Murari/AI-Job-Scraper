@@ -145,7 +145,6 @@ export default function Dashboard({ setSelectedJob, onTriggerJobSearch, isSearch
                               </div>
                           </div>
                           
-                          {/* --- THIS IS THE FIX --- */}
                           <div className="flex flex-row flex-wrap items-center justify-start sm:justify-end gap-2 w-full md:w-auto flex-shrink-0">
                               
                               <div className="relative">
@@ -158,7 +157,7 @@ export default function Dashboard({ setSelectedJob, onTriggerJobSearch, isSearch
                                   </button>
                                   {isFilterMenuOpen && (
                                       <div 
-                                          className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-slate-200 z-10"
+                                          className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-slate-200 z-30"
                                           onMouseLeave={() => setIsFilterMenuOpen(false)}
                                       >
                                           <div className="p-3 space-y-3">
@@ -197,7 +196,7 @@ export default function Dashboard({ setSelectedJob, onTriggerJobSearch, isSearch
                                   className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                   <Brain className="w-4 h-4" />
-                                   Analyze ({jobsToAnalyzeCount})
+                                  Analyze ({jobsToAnalyzeCount})
                               </button>
                               <button
                                   onClick={onTriggerJobSearch}
@@ -208,7 +207,6 @@ export default function Dashboard({ setSelectedJob, onTriggerJobSearch, isSearch
                                   Find Jobs
                               </button>
                           </div>
-                          {/* --- END OF FIX --- */}
                       </>
                   ) : (
                       <>

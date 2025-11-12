@@ -132,7 +132,7 @@ export default function AllJobs({ jobs, setSelectedJob }) {
                                 </button>
                                 {isFilterMenuOpen && (
                                     <div 
-                                        className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-slate-200 z-10"
+                                        className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-slate-200 z-30"
                                         onMouseLeave={() => setIsFilterMenuOpen(false)}
                                     >
                                         <div className="p-3 space-y-3">
